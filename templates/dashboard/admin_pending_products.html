@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Products - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="mb-0">
+                <i class="fa fa-clock me-2 text-primary"></i> Products Pending Approval
+            </h2>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill">
+                <i class="fa fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+        
+        {% if products %}
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-md-4 col-sm-6 wow zoomIn" data-wow-delay="0.{{ loop.index }}s">
+                    <div class="product-card bg-light rounded overflow-hidden">
+                        {% if product.image_url %}
+                            <img class="img-fluid w-100" src="{{ product.image_url }}" alt="{{ product.name }}" style="height: 220px; object-fit: cover;">
+                        {% else %}
+                            <img class="img-fluid w-100" src="https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=400&h=250&fit=crop" alt="Product" style="height: 220px; object-fit: cover;">
+                        {% endif %}
+                        <div class="p-4">
+                            <span class="badge bg-warning mb-2 px-3 py-2 rounded-pill">PENDING</span>
+                            <h5 class="mb-2">{{ product.name }}</h5>
+                            <p class="text-muted small mb-3">{{ product.description[:80] }}...</p>
+                            <h4 class="text-primary mb-2">R{{ "%.2f"|format(product.price) }}</h4>
+                            <div class="text-muted small mb-3">
+                                <i class="fa fa-user me-1"></i> {{ product.seller.full_name }}<br>
+                                <i class="fa fa-calendar me-1"></i> {{ product.created_at.strftime('%Y-%m-%d') }}
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('admin_approve_product', product_id=product.id) }}" 
+                                   class="btn btn-success rounded-pill"
+                                   onclick="return confirm('Approve this product?')">
+                                    <i class="fa fa-check me-2"></i> Approve
+                                </a>
+                                <a href="{{ url_for('delete_product', product_id=product.id) }}" 
+                                   class="btn btn-danger rounded-pill"
+                                   onclick="return confirm('Reject and delete this product?')">
+                                    <i class="fa fa-trash me-2"></i> Reject
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-light rounded p-5 text-center">
+                <i class="fa fa-check-circle fa-4x text-success mb-3"></i>
+                <h4>No products pending approval!</h4>
+                <p class="text-muted">All products have been reviewed.</p>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary rounded-pill mt-3">
+                    <i class="fa fa-arrow-left me-2"></i> Back to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+    .product-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ffc107, #ff9800);
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+        z-index: 1;
+    }
+    .product-card:hover::before {
+        transform: scaleX(1);
+    }
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .product-card img {
+        transition: transform 0.5s ease;
+    }
+    .product-card:hover img {
+        transform: scale(1.05);
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+    }
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+    }
+    .btn-success:hover, .btn-danger:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

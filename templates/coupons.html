@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}Available Coupons - Community Market{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="mb-2 animate-slide-left">
+                <i class="fas fa-tags me-2" style="color: #1e7b6e;"></i> Available Coupons & Offers
+            </h2>
+            <p class="text-muted animate-fade">Save money with these exclusive deals! All coupons valid until <strong>December 31, 2028</strong></p>
+        </div>
+    </div>
+    
+    {% if coupons %}
+        <!-- Results Info -->
+        <div class="row mb-3">
+            <div class="col-12 text-center">
+                <small class="text-muted">Showing {{ pagination.start_item }} - {{ pagination.end_item }} of {{ pagination.total }} coupons</small>
+            </div>
+        </div>
+        
+        <!-- Filter/Sort Bar -->
+        <div class="row mb-4 animate-slide-up delay-1">
+            <div class="col-12">
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill filter-btn active" data-filter="all">All Coupons</button>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill filter-btn" data-filter="percentage">% Off</button>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill filter-btn" data-filter="fixed">Fixed Amount</button>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill filter-btn" data-filter="category">Category Specific</button>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill filter-btn" data-filter="first_purchase">First Purchase</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for coupon in coupons %}
+            <div class="col-md-6 col-lg-4 mb-4 coupon-item" data-type="
+                {%- if coupon.is_first_purchase_only %}first_purchase{% endif %}
+                {%- if coupon.applicable_category %} category{% endif %}
+                {{ coupon.discount_type }}">
+                <div class="coupon-card animate-slide-up delay-{{ loop.index % 5 + 1 }}">
+                    <div class="coupon-header">
+                        <div class="coupon-code">{{ coupon.code }}</div>
+                        <div class="coupon-discount">
+                            {% if coupon.discount_type == 'percentage' %}
+                                {{ "%.0f"|format(coupon.discount_value) }}% OFF
+                            {% else %}
+                                R{{ "%.0f"|format(coupon.discount_value) }} OFF
+                            {% endif %}
+                        </div>
+                        {% if coupon.usage_limit and coupon.usage_limit <= 100 %}
+                            <div class="limited-badge">
+                                <i class="fas fa-fire"></i> Limited!
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="coupon-body">
+                        <h5 class="coupon-name">{{ coupon.name }}</h5>
+                        <p class="coupon-description">{{ coupon.description or 'Limited time offer!' }}</p>
+                        
+                        <div class="coupon-details">
+                            {% if coupon.min_order_amount > 0 %}
+                                <div class="detail-item">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>Min. Spend: R{{ "%.2f"|format(coupon.min_order_amount) }}</span>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="detail-item">
+                                <i class="far fa-calendar-alt"></i>
+                                <span>Expires: {{ coupon.valid_to.strftime('%d %b %Y') }}</span>
+                                {% if coupon.valid_to.year == 2028 %}
+                                    <span class="badge bg-success ms-2">Long Term</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if coupon.is_first_purchase_only %}
+                                <div class="detail-item">
+                                    <i class="fas fa-gift"></i>
+                                    <span>🎁 First purchase only</span>
+                                </div>
+                            {% endif %}
+                            
+                            {% if coupon.applicable_category %}
+                                <div class="detail-item">
+                                    <i class="fas fa-tag"></i>
+                                    <span>{{ coupon.applicable_category|capitalize }} only</span>
+                                </div>
+                            {% endif %}
+                            
+                            {% if coupon.applicable_seller_id %}
+                                <div class="detail-item">
+                                    <i class="fas fa-store"></i>
+                                    <span>Specific store only</span>
+                                </div>
+                            {% endif %}
+                            
+                            {% if coupon.usage_limit %}
+                                <div class="detail-item">
+                                    <i class="fas fa-users"></i>
+                                    <span>Only {{ coupon.usage_limit }} uses available</span>
+                                    {% if coupon.used_count %}
+                                        <small class="text-muted">({{ coupon.used_count }} used)</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if coupon.per_user_limit and coupon.per_user_limit > 1 %}
+                                <div class="detail-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Use up to {{ coupon.per_user_limit }} times per user</span>
+                                </div>
+                            {% endif %}
+                            
+                            {% if coupon.max_discount_amount and coupon.discount_type == 'percentage' %}
+                                <div class="detail-item">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Max discount: R{{ "%.0f"|format(coupon.max_discount_amount) }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button class="btn btn-copy-coupon" data-code="{{ coupon.code }}">
+                            <i class="fas fa-copy me-2"></i> Copy Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.total_pages > 1 %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="Coupon pagination">
+                    <ul class="pagination justify-content-center">
+                        <!-- Previous Button -->
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('coupons_page', page=pagination.prev_num) }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Page Numbers -->
+                        {% for page_num in pagination.pages_to_show %}
+                            {% if page_num == pagination.current_page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('coupons_page', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Next Button -->
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('coupons_page', page=pagination.next_num) }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="text-center mt-3 animate-fade">
+            <div class="alert alert-info rounded-pill d-inline-block px-4">
+                <i class="fas fa-info-circle me-2"></i> 
+                Copy the coupon code and apply it at checkout!
+            </div>
+        </div>
+    {% else %}
+        <div class="glass-card p-5 text-center animate-scale">
+            <i class="fas fa-ticket-alt fa-4x mb-3" style="color: #1e7b6e;"></i>
+            <h4>No active coupons available</h4>
+            <p class="text-muted">Check back later for special offers and discounts!</p>
+            <a href="{{ url_for('products') }}" class="btn btn-primary mt-3 rounded-pill">
+                <i class="fas fa-store me-2"></i> Start Shopping
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .coupon-card {
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(30, 123, 110, 0.2);
+        position: relative;
+        height: 100%;
+    }
+    
+    .coupon-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border-color: #1e7b6e;
+    }
+    
+    .coupon-header {
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .coupon-code {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: white;
+        background: rgba(255, 255, 255, 0.2);
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 50px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .coupon-discount {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ffd166;
+    }
+    
+    .limited-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #dc3545;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        animation: pulse 1.5s ease infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    
+    .coupon-body {
+        padding: 20px;
+    }
+    
+    .coupon-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #1e3a3f;
+    }
+    
+    .coupon-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 15px;
+        line-height: 1.4;
+    }
+    
+    .coupon-details {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .detail-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .detail-item i {
+        width: 20px;
+        color: #1e7b6e;
+        font-size: 0.8rem;
+    }
+    
+    .btn-copy-coupon {
+        width: 100%;
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 40px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-copy-coupon:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Filter buttons */
+    .filter-btn {
+        transition: all 0.3s ease;
+        padding: 8px 20px;
+    }
+    
+    .filter-btn.active {
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        color: white;
+        border-color: #1e7b6e;
+    }
+    
+    .filter-btn:hover:not(.active) {
+        background: rgba(30, 123, 110, 0.1);
+        border-color: #1e7b6e;
+        transform: translateY(-2px);
+    }
+    
+    /* Pagination Styles */
+    .pagination {
+        gap: 8px;
+    }
+    
+    .page-item .page-link {
+        border-radius: 12px;
+        padding: 10px 18px;
+        color: #1e3a3f;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .page-item.active .page-link {
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        border-color: #1e7b6e;
+        color: white;
+        box-shadow: 0 4px 12px rgba(30, 123, 110, 0.3);
+    }
+    
+    .page-item .page-link:hover:not(.active) {
+        background: rgba(30, 123, 110, 0.1);
+        border-color: #1e7b6e;
+        transform: translateY(-2px);
+    }
+    
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Animations */
+    .animate-slide-left {
+        animation: slideLeft 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    .animate-scale {
+        animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    .animate-fade {
+        animation: fadeIn 0.5s ease forwards;
+        opacity: 0;
+    }
+    
+    @keyframes slideLeft {
+        from { opacity: 0; transform: translateX(-40px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .badge.bg-success {
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(11, 181, 216, 0.1));
+        border: 1px solid rgba(13, 202, 240, 0.3);
+        color: #0c5460;
+    }
+    
+    @media (max-width: 768px) {
+        .coupon-code {
+            font-size: 1.1rem;
+            padding: 5px 12px;
+        }
+        .coupon-discount {
+            font-size: 1rem;
+        }
+        .filter-btn {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        .coupon-name {
+            font-size: 0.95rem;
+        }
+        .detail-item {
+            font-size: 0.7rem;
+        }
+        .page-item .page-link {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+    }
+</style>
+
+<script>
+document.querySelectorAll('.btn-copy-coupon').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const code = this.getAttribute('data-code');
+        try {
+            await navigator.clipboard.writeText(code);
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-check me-2"></i> Copied!';
+            this.style.background = '#28a745';
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.style.background = '';
+            }, 2000);
+            showToast(`Coupon ${code} copied to clipboard!`, 'success');
+        } catch (err) {
+            showToast('Failed to copy coupon code', 'error');
+        }
+    });
+});
+
+// Filter functionality
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Update active state
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        const filter = this.getAttribute('data-filter');
+        const items = document.querySelectorAll('.coupon-item');
+        
+        items.forEach(item => {
+            if (filter === 'all') {
+                item.style.display = '';
+            } else {
+                const types = item.getAttribute('data-type');
+                if (types && types.includes(filter)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+        
+        // Add animation to visible items
+        items.forEach(item => {
+            if (item.style.display !== 'none') {
+                item.style.animation = 'none';
+                setTimeout(() => {
+                    item.style.animation = 'slideUp 0.6s ease forwards';
+                }, 10);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}My Favorites - Community Market{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4 animate-slide-left">
+        <i class="fas fa-heart me-2" style="color: #dc3545;"></i> My Favorites
+    </h2>
+    
+    {% if favorites %}
+        <div class="row">
+            {% for favorite in favorites %}
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="product-card animate-slide-up delay-{{ loop.index % 5 + 1 }}">
+                    <!-- Image Container with Hover Effects -->
+                    <div class="product-image-container">
+                        {% if favorite.product.image_url %}
+                            <img class="product-image" src="{{ favorite.product.image_url }}" alt="{{ favorite.product.name }}">
+                        {% else %}
+                            <img class="product-image" src="https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=400&h=250&fit=crop" alt="Product">
+                        {% endif %}
+                        
+                        <!-- Overlay with Quick Actions -->
+                        <div class="image-overlay">
+                            <div class="overlay-content">
+                                <a href="{{ url_for('product_detail', product_id=favorite.product.id) }}" class="overlay-btn quick-view">
+                                    <i class="fa fa-eye"></i> Quick View
+                                </a>
+                                {% if current_user.is_authenticated and current_user.can_buy() and favorite.product.stock_quantity > 0 %}
+                                <a href="{{ url_for('add_to_cart', product_id=favorite.product.id) }}" class="overlay-btn quick-cart">
+                                    <i class="fa fa-cart-plus"></i> Add to Cart
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Zoom Indicator -->
+                        <div class="zoom-indicator">
+                            <i class="fa fa-search-plus"></i>
+                        </div>
+                        
+                        <!-- Heart Badge -->
+                        <div class="heart-badge">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <span class="badge mb-2 px-3 py-2 category-badge" style="background: linear-gradient(135deg, #1e7b6e, #2c9c8a); border-radius: 20px;">
+                            {{ favorite.product.category|capitalize }}
+                        </span>
+                        <h5 class="card-title fw-bold mt-2 product-title">{{ favorite.product.name[:35] }}</h5>
+                        <p class="card-text text-muted small product-description">{{ favorite.product.description[:70] }}...</p>
+                        
+                        <div class="price mb-3 product-price">R{{ "%.2f"|format(favorite.product.price) }}</div>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('product_detail', product_id=favorite.product.id) }}" class="btn btn-primary flex-grow-1 btn-sm view-details-btn">
+                                View Details <i class="fa fa-arrow-right ms-1"></i>
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm remove-favorite" data-id="{{ favorite.product.id }}" style="border-radius: 40px;">
+                                <i class="fas fa-heart-broken"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="glass-card p-5 text-center animate-scale">
+            <i class="fas fa-heart-broken fa-4x mb-3" style="color: #dc3545;"></i>
+            <h4>No favorites yet</h4>
+            <p class="text-muted">Start adding products you love to your favorites!</p>
+            <a href="{{ url_for('products') }}" class="btn btn-primary mt-3">
+                <i class="fas fa-store me-2"></i> Browse Products
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Product Card Styles */
+    .product-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        height: 100%;
+        position: relative;
+    }
+    
+    .product-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #dc3545, #ff6b6b, #ffd166, #dc3545);
+        background-size: 300% 100%;
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+        z-index: 1;
+    }
+    
+    .product-card:hover::before {
+        transform: scaleX(1);
+        animation: shimmer 1.5s ease infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+    }
+    
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Product Image Container */
+    .product-image-container {
+        position: relative;
+        overflow: hidden;
+        height: 220px;
+        cursor: pointer;
+    }
+    
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+    }
+    
+    .product-card:hover .product-image {
+        transform: scale(1.15);
+        filter: brightness(0.9);
+    }
+    
+    /* Image Overlay */
+    .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 59, 63, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        backdrop-filter: blur(5px);
+    }
+    
+    .product-card:hover .image-overlay {
+        opacity: 1;
+    }
+    
+    .overlay-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transform: translateY(20px);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .product-card:hover .overlay-content {
+        transform: translateY(0);
+    }
+    
+    .overlay-btn {
+        padding: 10px 20px;
+        background: white;
+        color: #1e7b6e;
+        text-decoration: none;
+        border-radius: 40px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-align: center;
+        display: inline-block;
+    }
+    
+    .overlay-btn:hover {
+        transform: translateX(5px);
+    }
+    
+    .quick-view {
+        border: 2px solid white;
+        background: transparent;
+        color: white;
+    }
+    
+    .quick-view:hover {
+        background: #ffd166;
+        color: #1e3a3f;
+        border-color: #ffd166;
+    }
+    
+    .quick-cart {
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        color: white;
+    }
+    
+    .quick-cart:hover {
+        background: linear-gradient(135deg, #ffd166, #ffc107);
+        color: #1e3a3f;
+    }
+    
+    /* Zoom Indicator */
+    .zoom-indicator {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+    }
+    
+    .product-card:hover .zoom-indicator {
+        opacity: 1;
+        animation: pulse 1s ease infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    /* Heart Badge */
+    .heart-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: #dc3545;
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 5;
+        animation: heartbeat 1.5s ease infinite;
+    }
+    
+    @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    /* Product Title Animation */
+    .product-title {
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover .product-title {
+        color: #1e7b6e;
+        transform: translateX(5px);
+    }
+    
+    /* Product Description Animation */
+    .product-description {
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover .product-description {
+        color: #495057;
+    }
+    
+    /* Product Price Animation */
+    .product-price {
+        transition: all 0.3s ease;
+        font-size: 1.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .product-card:hover .product-price {
+        transform: scale(1.05);
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    /* View Details Button Animation */
+    .view-details-btn {
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover .view-details-btn {
+        transform: translateX(5px);
+        background: linear-gradient(135deg, #1e7b6e, #2c9c8a);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    /* Category Badge Animation */
+    .category-badge {
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover .category-badge {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(30, 123, 110, 0.3);
+    }
+    
+    /* Remove Favorite Button Animation */
+    .remove-favorite {
+        transition: all 0.3s ease;
+    }
+    
+    .remove-favorite:hover {
+        transform: scale(1.05);
+        background: #dc3545;
+        color: white;
+    }
+    
+    /* Animations */
+    .animate-slide-left {
+        animation: slideLeft 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    .animate-scale {
+        animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    @keyframes slideLeft {
+        from { opacity: 0; transform: translateX(-40px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    
+    /* Button Styles */
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .btn-outline-danger {
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-danger:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .product-image-container {
+            height: 180px;
+        }
+        
+        .product-price {
+            font-size: 1.2rem;
+        }
+        
+        .overlay-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        
+        .zoom-indicator {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+        
+        .heart-badge {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+        
+        .remove-favorite {
+            font-size: 12px;
+        }
+        
+        .remove-favorite i {
+            font-size: 10px;
+        }
+    }
+</style>
+
+<script>
+document.querySelectorAll('.remove-favorite').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const productId = this.getAttribute('data-id');
+        const card = this.closest('.col-md-4');
+        
+        // Add exit animation
+        const productCard = card.querySelector('.product-card');
+        productCard.style.animation = 'scaleIn 0.3s ease-out reverse';
+        
+        fetch(`/api/favorite/toggle/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                setTimeout(() => {
+                    card.remove();
+                    if (document.querySelectorAll('.col-md-4').length === 0) {
+                        location.reload();
+                    }
+                }, 300);
+                showToast('Removed from favorites', 'info');
+                
+                // Update favorite count in navbar
+                fetch('/api/favorites/count')
+                    .then(res => res.json())
+                    .then(countData => {
+                        const badge = document.getElementById('favoritesBadge');
+                        if (badge) {
+                            if (countData.count > 0) {
+                                badge.textContent = countData.count > 99 ? '99+' : countData.count;
+                                badge.style.display = 'inline-block';
+                            } else {
+                                badge.style.display = 'none';
+                            }
+                        }
+                    });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+});
+
+function showToast(message, type) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed bottom-0 end-0 m-3" role="alert" style="z-index: 10000;">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    const container = document.createElement('div');
+    container.innerHTML = toastHtml;
+    document.body.appendChild(container);
+    const toastEl = container.querySelector('.toast');
+    const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 3000 });
+    toast.show();
+    setTimeout(() => { container.remove(); }, 3100);
+}
+</script>
+{% endblock %}

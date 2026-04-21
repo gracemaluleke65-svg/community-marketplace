@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Manage Coupons{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <h2 class="mb-0">
+            <i class="fas fa-tags me-2" style="color: #1e7b6e;"></i> Manage Coupons
+        </h2>
+        <div>
+            <a href="{{ url_for('admin_create_coupon') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i> Create Coupon
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-arrow-left me-2"></i> Back
+            </a>
+        </div>
+    </div>
+    
+    <div class="glass-card p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Discount</th>
+                        <th>Min Order</th>
+                        <th>Valid Until</th>
+                        <th>Uses</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coupon in coupons %}
+                    <tr>
+                        <td><strong class="coupon-code-display">{{ coupon.code }}</strong></td>
+                        <td>{{ coupon.name[:30] }}</td>
+                        <td>
+                            {% if coupon.discount_type == 'percentage' %}
+                                <span class="badge bg-info">{{ coupon.discount_value }}% OFF</span>
+                            {% else %}
+                                <span class="badge bg-success">R{{ "%.0f"|format(coupon.discount_value) }} OFF</span>
+                            {% endif %}
+                        </td>
+                        <td>R{{ "%.2f"|format(coupon.min_order_amount) }}</td>
+                        <td>
+                            {% if coupon.valid_to < now %}
+                                <span class="text-danger">Expired</span>
+                            {% else %}
+                                {{ coupon.valid_to.strftime('%Y-%m-%d') }}
+                            {% endif %}
+                        </td>
+                        <td>{{ coupon.used_count }}{% if coupon.usage_limit %}/{{ coupon.usage_limit }}{% endif %}</td>
+                        <td>
+                            <span class="badge {% if coupon.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ 'Active' if coupon.is_active else 'Inactive' }}
+                            </span>
+                         </td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-warning toggle-coupon" data-id="{{ coupon.id }}" data-active="{{ coupon.is_active }}">
+                                    <i class="fas {% if coupon.is_active %}fa-pause{% else %}fa-play{% endif %}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-coupon" data-id="{{ coupon.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                         </td>
+                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No coupons created yet</p>
+                            <a href="{{ url_for('admin_create_coupon') }}" class="btn btn-primary">Create First Coupon</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .coupon-code-display {
+        font-family: monospace;
+        font-size: 0.9rem;
+        background: #f0f0f0;
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .table th {
+        font-weight: 600;
+        border-bottom: 2px solid rgba(30, 123, 110, 0.2);
+    }
+    
+    .table tbody tr:hover {
+        background: rgba(30, 123, 110, 0.05);
+    }
+</style>
+
+<script>
+document.querySelectorAll('.toggle-coupon').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const couponId = this.getAttribute('data-id');
+        const isActive = this.getAttribute('data-active') === 'True';
+        
+        fetch(`/admin/coupons/${couponId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                showToast('Failed to toggle coupon', 'error');
+            }
+        });
+    });
+});
+
+document.querySelectorAll('.delete-coupon').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete this coupon? This action cannot be undone.')) {
+            const couponId = this.getAttribute('data-id');
+            
+            fetch(`/admin/coupons/${couponId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showToast('Failed to delete coupon', 'error');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

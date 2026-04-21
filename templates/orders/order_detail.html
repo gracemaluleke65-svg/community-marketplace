@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.order_number[:15] }} - Community Market{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="mb-0">
+                <i class="fa fa-receipt me-2 text-primary"></i> Order Details
+            </h2>
+            <a href="{% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}{% elif current_user.role == 'seller' %}{{ url_for('seller_dashboard') }}{% else %}{{ url_for('buyer_dashboard') }}{% endif %}" class="btn btn-outline-secondary rounded-pill">
+                <i class="fa fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+        
+        <div class="row g-5">
+            <!-- Order Items Section -->
+            <div class="col-lg-8">
+                <div class="bg-light rounded p-4 wow fadeInUp" data-wow-delay="0.3s">
+                    <h5 class="mb-3"><i class="fa fa-box me-2 text-primary"></i> Order Items</h5>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr style="border-bottom: 2px solid rgba(30,123,110,0.2);">
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Subtotal</th>
+                                    <th>Review</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            {% if item.product.image_url %}
+                                                <img src="{{ item.product.image_url }}" width="60" height="60" class="rounded" style="object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded d-flex align-items-center justify-content-center bg-white" style="width: 60px; height: 60px;">
+                                                    <i class="fa fa-image text-primary"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ item.product.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ item.product.category|capitalize }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>R{{ "%.2f"|format(item.price_at_time) }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                                            <i class="fa fa-times me-1"></i> x{{ item.quantity }}
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-primary">R{{ "%.2f"|format(item.price_at_time * item.quantity) }}</td>
+                                    <td>
+                                        {% set existing_review = item.product.reviews|selectattr('user_id', 'equalto', current_user.id)|list %}
+                                        {% if existing_review %}
+                                            <button class="btn btn-sm btn-outline-warning rounded-pill view-review-btn" 
+                                                    data-product-id="{{ item.product.id }}" 
+                                                    data-product-name="{{ item.product.name }}" 
+                                                    data-rating="{{ existing_review[0].rating }}" 
+                                                    data-comment="{{ existing_review[0].comment }}">
+                                                <i class="fa fa-star me-1"></i> View Review
+                                            </button>
+                                        {% elif order.status in ['delivered', 'paid', 'shipped'] %}
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill write-review-btn" 
+                                                    data-product-id="{{ item.product.id }}" 
+                                                    data-product-name="{{ item.product.name }}">
+                                                <i class="fa fa-edit me-1"></i> Write Review
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary rounded-pill" disabled style="opacity: 0.5;">
+                                                <i class="fa fa-clock me-1"></i> Awaiting Delivery
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                 </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr style="border-top: 2px solid rgba(30,123,110,0.2);">
+                                    <td colspan="4" class="text-end fw-bold fs-5">Total:</td>
+                                    <td class="fw-bold fs-3 text-primary">R{{ "%.2f"|format(order.total_amount) }}</td>
+                                 </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Summary - Right Column -->
+            <div class="col-lg-4">
+                <!-- Order Info Card -->
+                <div class="bg-light rounded p-4 mb-4 wow fadeInUp" data-wow-delay="0.4s">
+                    <h5 class="mb-3"><i class="fa fa-info-circle me-2 text-primary"></i> Order Information</h5>
+                    <div class="mb-3 pb-2 border-bottom">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Order Number:</span>
+                            <strong class="small">{{ order.order_number }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Order Date:</span>
+                            <span>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Status:</span>
+                            <span class="badge bg-{% if order.status == 'pending' %}warning text-dark{% elif order.status == 'paid' %}info text-dark{% elif order.status == 'shipped' %}primary{% elif order.status == 'delivered' %}success{% else %}danger{% endif %} rounded-pill px-3 py-2">
+                                {{ order.status|upper }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3 pb-2 border-bottom">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal:</span>
+                            <span>R{{ "%.2f"|format(order.total_amount) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Shipping:</span>
+                            <span class="text-success"><i class="fa fa-check-circle me-1"></i> FREE</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold fs-5">Total Paid:</span>
+                            <span class="fw-bold fs-3 text-primary">R{{ "%.2f"|format(order.total_amount) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Shipping Address Card -->
+                <div class="bg-light rounded p-4 mb-4 wow fadeInUp" data-wow-delay="0.5s">
+                    <h5 class="mb-3"><i class="fa fa-map-marker-alt me-2 text-primary"></i> Shipping Address</h5>
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa fa-location-dot mt-1 text-primary"></i>
+                        <p class="mb-0 text-muted">{{ order.shipping_address }}</p>
+                    </div>
+                </div>
+                
+                <!-- Delivery Timeline -->
+                <div class="bg-light rounded p-4 wow fadeInUp" data-wow-delay="0.6s">
+                    <h5 class="mb-3"><i class="fa fa-truck me-2 text-primary"></i> Delivery Timeline</h5>
+                    <div class="timeline">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <i class="fa fa-check-circle text-success"></i>
+                                <span class="ms-2">Order Placed</span>
+                            </div>
+                            <small class="text-muted">{{ order.created_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        {% if order.status in ['paid', 'shipped', 'delivered'] %}
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <i class="fa fa-credit-card text-success"></i>
+                                <span class="ms-2">Payment Confirmed</span>
+                            </div>
+                            <small class="text-muted">{{ order.created_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        {% endif %}
+                        {% if order.status in ['shipped', 'delivered'] %}
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <i class="fa fa-truck text-info"></i>
+                                <span class="ms-2">Order Shipped</span>
+                            </div>
+                            <small class="text-muted">In transit</small>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'delivered' %}
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="fa fa-home text-success"></i>
+                                <span class="ms-2">Delivered</span>
+                            </div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Admin Status Update -->
+                {% if current_user.role == 'admin' %}
+                <div class="bg-light rounded p-4 wow fadeInUp" data-wow-delay="0.7s">
+                    <h5 class="mb-3"><i class="fa fa-cog me-2 text-primary"></i> Update Status</h5>
+                    <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="status" class="form-select mb-3 rounded-pill">
+                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
+                            <option value="paid" {% if order.status == 'paid' %}selected{% endif %}>✅ Paid</option>
+                            <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>📦 Shipped</option>
+                            <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>🏠 Delivered</option>
+                            <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>❌ Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                            <i class="fa fa-save me-2"></i> Update Status
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="reviewModalLabel">
+                    <i class="fa fa-star text-warning me-2"></i> Write a Review
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="" id="reviewForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <img id="reviewProductImage" src="" alt="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px;">
+                        <h6 id="reviewProductName" class="mt-2 mb-0"></h6>
+                        <input type="hidden" id="reviewProductId" name="product_id">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Rating</label>
+                        <div class="rating-input">
+                            <i class="far fa-star fa-2x" data-rating="1"></i>
+                            <i class="far fa-star fa-2x" data-rating="2"></i>
+                            <i class="far fa-star fa-2x" data-rating="3"></i>
+                            <i class="far fa-star fa-2x" data-rating="4"></i>
+                            <i class="far fa-star fa-2x" data-rating="5"></i>
+                        </div>
+                        <input type="hidden" name="rating" id="ratingValue" required>
+                        <div class="text-muted small mt-1">Click on stars to rate</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Review</label>
+                        <textarea name="comment" class="form-control rounded-3" rows="4" placeholder="Share your experience with this product..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Review Modal -->
+<div class="modal fade" id="viewReviewModal" tabindex="-1" aria-labelledby="viewReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="viewReviewModalLabel">
+                    <i class="fa fa-star text-warning me-2"></i> Your Review
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="viewReviewProductImage" src="" alt="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px;">
+                    <h6 id="viewReviewProductName" class="mt-2 mb-0"></h6>
+                </div>
+                
+                <div class="mb-3 text-center">
+                    <div class="view-rating" id="viewRatingStars"></div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Your Review</label>
+                    <div class="bg-light rounded-3 p-3" id="viewReviewComment"></div>
+                </div>
+                
+                <div class="alert alert-info rounded-3">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <small>Reviews help other buyers make informed decisions. Thank you for sharing your experience!</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 10px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 20px;
+        bottom: 20px;
+        width: 2px;
+        background: linear-gradient(135deg, var(--primary), #ffd166);
+        opacity: 0.3;
+    }
+    .table td, .table th {
+        padding: 15px;
+    }
+    /* FIXED: Badge styles for better visibility */
+    .badge.bg-light {
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6;
+        color: #212529 !important;
+        font-weight: 600;
+    }
+    .badge.bg-light i {
+        color: #6c757d;
+    }
+    /* Status badge text contrast fix */
+    .badge.bg-warning {
+        color: #212529 !important;
+    }
+    .badge.bg-info {
+        color: #212529 !important;
+    }
+    .badge.bg-primary {
+        color: white !important;
+    }
+    .badge.bg-success {
+        color: white !important;
+    }
+    .badge.bg-danger {
+        color: white !important;
+    }
+    
+    /* Rating Stars Input */
+    .rating-input i {
+        cursor: pointer;
+        color: #ddd;
+        transition: all 0.2s ease;
+        margin-right: 5px;
+    }
+    
+    .rating-input i.active,
+    .rating-input i.hover {
+        color: #ffc107;
+    }
+    
+    .view-rating i {
+        color: #ffc107;
+        font-size: 1.2rem;
+        margin: 0 2px;
+    }
+    
+    @media (max-width: 768px) {
+        .table td, .table th {
+            padding: 10px;
+            font-size: 12px;
+        }
+        .fs-3 {
+            font-size: 1.5rem !important;
+        }
+        .rating-input i {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+
+<script>
+    // Get CSRF token from meta tag
+    function getCsrfToken() {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        return token ? token.getAttribute('content') : '';
+    }
+    
+    // Rating stars functionality for write review modal
+    document.querySelectorAll('.rating-input i').forEach(star => {
+        star.addEventListener('mouseover', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            document.querySelectorAll('.rating-input i').forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.add('hover');
+                } else {
+                    s.classList.remove('hover');
+                }
+            });
+        });
+        
+        star.addEventListener('mouseout', function() {
+            document.querySelectorAll('.rating-input i').forEach(s => {
+                s.classList.remove('hover');
+            });
+            const currentRating = parseInt(document.getElementById('ratingValue').value || 0);
+            document.querySelectorAll('.rating-input i').forEach((s, index) => {
+                if (index < currentRating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+        
+        star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            document.getElementById('ratingValue').value = rating;
+            document.querySelectorAll('.rating-input i').forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+    
+    // Write Review Button
+    document.querySelectorAll('.write-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            const productName = this.getAttribute('data-product-name');
+            
+            // Get product image from the table row
+            const row = this.closest('tr');
+            const productImg = row.querySelector('img');
+            const imgSrc = productImg ? productImg.src : '';
+            
+            document.getElementById('reviewProductId').value = productId;
+            document.getElementById('reviewProductName').innerText = productName;
+            document.getElementById('reviewProductImage').src = imgSrc;
+            
+            // Reset form
+            document.getElementById('ratingValue').value = '';
+            document.querySelectorAll('.rating-input i').forEach(star => {
+                star.classList.remove('active', 'hover');
+            });
+            document.querySelector('#reviewForm textarea[name="comment"]').value = '';
+            
+            // Set form action with CSRF token already in hidden field
+            document.getElementById('reviewForm').action = `/product/${productId}/review`;
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        });
+    });
+    
+    // View Review Button
+    document.querySelectorAll('.view-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productName = this.getAttribute('data-product-name');
+            const rating = parseInt(this.getAttribute('data-rating'));
+            const comment = this.getAttribute('data-comment');
+            
+            // Get product image from the table row
+            const row = this.closest('tr');
+            const productImg = row.querySelector('img');
+            const imgSrc = productImg ? productImg.src : '';
+            
+            document.getElementById('viewReviewProductName').innerText = productName;
+            document.getElementById('viewReviewProductImage').src = imgSrc;
+            document.getElementById('viewReviewComment').innerHTML = comment || 'No comment provided.';
+            
+            // Generate stars
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    starsHtml += '<i class="fa fa-star"></i>';
+                } else {
+                    starsHtml += '<i class="far fa-star"></i>';
+                }
+            }
+            document.getElementById('viewRatingStars').innerHTML = starsHtml;
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('viewReviewModal')).show();
+        });
+    });
+</script>
+{% endblock %}

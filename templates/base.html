@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <title>Community Market - {% block title %}South Africa's Local Marketplace{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+    
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/animate/animate.min.css') }}" rel="stylesheet">
+    
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <style>
+        /* IMPORTANT: Navbar background fix */
+        .navbar {
+            background: #1e3a3f !important;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: #0f2a2e !important;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Fix navbar container - ensure it has background */
+        .container-fluid.position-relative.p-0 {
+            background: #1e3a3f;
+        }
+        
+        /* Fix nav links for better visibility */
+        .navbar-dark .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        .navbar-dark .navbar-nav .nav-link:hover,
+        .navbar-dark .navbar-nav .nav-link.active {
+            color: #ffd166 !important;
+        }
+        
+        /* Fix dropdown menu styling */
+        .dropdown-menu {
+            background: #1e3a3f;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .dropdown-menu .dropdown-item {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .dropdown-menu .dropdown-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #ffd166;
+        }
+        
+        /* FIXED: Login and Sign Up buttons - now clearly visible */
+        .btn-outline-light {
+            border: 2px solid #ffd166;
+            color: #ffd166;
+            background: transparent;
+        }
+        
+        .btn-outline-light:hover {
+            background: #ffd166;
+            color: #1e3a3f;
+            border-color: #ffd166;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+            border: none;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0f5a50, #1e7b6e);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+        }
+        
+        /* Cart badge fix */
+        .cart-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: linear-gradient(135deg, #ffd166, #ffc107);
+            color: #1e3a3f;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 800;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            animation: pulse 1.5s ease infinite;
+        }
+        
+        /* Favorite badge */
+        .favorite-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+        }
+        
+        /* Position relative for cart icon */
+        .position-relative .btn.text-light {
+            color: white !important;
+            padding: 8px 12px;
+        }
+        
+        .position-relative .btn.text-light:hover {
+            color: #ffd166 !important;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 380px;
+        }
+        
+        @media (max-width: 768px) {
+            .flash-messages {
+                top: 80px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+        
+        .alert {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px) rotate(10deg); }
+            to { opacity: 1; transform: translateX(0) rotate(0deg); }
+        }
+        
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            top: 50%;
+            left: 50%;
+            margin-left: -9px;
+            margin-top: -9px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-paid { background: #d1ecf1; color: #0c5460; }
+        .status-shipped { background: #d4edda; color: #155724; }
+        .status-delivered { background: linear-gradient(135deg, #1e7b6e, #2c9c8a); color: white; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: #1e7b6e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .scroll-to-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-5px) scale(1.1);
+            background: #0f5a50;
+        }
+        
+        .scroll-to-top i {
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .scroll-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+            }
+            .scroll-to-top i { font-size: 1.2rem; }
+        }
+        
+        /* Product Card Styling */
+        .product-card {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            height: 100%;
+            position: relative;
+        }
+        
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #1e7b6e, #2c9c8a, #ffd166, #1e7b6e);
+            background-size: 300% 100%;
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+            z-index: 1;
+        }
+        
+        .product-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .product-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        
+        .product-card img {
+            height: 220px;
+            object-fit: cover;
+            width: 100%;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .product-card:hover img {
+            transform: scale(1.08);
+        }
+        
+        .price {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e7b6e;
+            letter-spacing: -0.5px;
+        }
+        
+        .rating {
+            color: #ffc107;
+            font-size: 0.85rem;
+        }
+        
+        .feature-icon-small {
+            width: 60px;
+            height: 60px;
+            background: rgba(30, 123, 110, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        
+        .feature-icon-small i {
+            font-size: 1.8rem;
+            color: #1e7b6e;
+        }
+        
+        /* Animation Classes */
+        .animate-slide-up {
+            animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+        }
+        
+        .animate-slide-left {
+            animation: slideLeft 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+        }
+        
+        .animate-slide-right {
+            animation: slideRight 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+        }
+        
+        .animate-scale {
+            animation: scaleIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes slideRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
+        
+        /* Mobile navbar fixes */
+        @media (max-width: 991px) {
+            .navbar-collapse {
+                background: #1e3a3f;
+                padding: 20px;
+                border-radius: 20px;
+                margin-top: 10px;
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 10px 0 !important;
+            }
+            
+            .btn-outline-light, .btn-primary {
+                margin: 5px 0;
+                display: inline-block;
+                text-align: center;
+            }
+        }
+        
+        /* Heart icon animation */
+        .heart-icon {
+            transition: transform 0.2s ease;
+        }
+        
+        .heart-icon:hover {
+            transform: scale(1.2);
+        }
+        
+        .heart-icon.favorited {
+            color: #dc3545;
+        }
+        
+        /* Coupon styling */
+        .coupon-code {
+            font-family: monospace;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        
+        /* Shake animation for bell */
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+        }
+        
+        .fa-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Spinner Start -->
+<div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+    <div class="spinner"></div>
+</div>
+<!-- Spinner End -->
+
+<!-- Topbar Start -->
+<div class="container-fluid bg-dark px-5 d-none d-lg-block">
+    <div class="row gx-0">
+        <div class="col-lg-8 text-center text-lg-start mb-2 mb-lg-0">
+            <div class="d-inline-flex align-items-center" style="height: 45px;">
+                <small class="me-3 text-light"><i class="fa fa-map-marker-alt me-2"></i>Johannesburg, South Africa</small>
+                <small class="me-3 text-light"><i class="fa fa-phone-alt me-2"></i>0800 123 456</small>
+                <small class="text-light"><i class="fa fa-envelope-open me-2"></i>support@communitymarket.co.za</small>
+            </div>
+        </div>
+        <div class="col-lg-4 text-center text-lg-end">
+            <div class="d-inline-flex align-items-center" style="height: 45px;">
+                <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href="#"><i class="fab fa-twitter fw-normal"></i></a>
+                <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href="#"><i class="fab fa-facebook-f fw-normal"></i></a>
+                <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href="#"><i class="fab fa-linkedin-in fw-normal"></i></a>
+                <a class="btn btn-sm btn-outline-light btn-sm-square rounded-circle me-2" href="#"><i class="fab fa-instagram fw-normal"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Topbar End -->
+
+<!-- Navbar Start -->
+<div class="container-fluid position-relative p-0" style="background: #1e3a3f;">
+    <nav class="navbar navbar-expand-lg navbar-dark px-5 py-3 py-lg-0">
+        <a href="{{ url_for('index') }}" class="navbar-brand p-0">
+            <h1 class="m-0"><i class="fa fa-store me-2"></i>Community Market</h1>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="fa fa-bars"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <div class="navbar-nav ms-auto py-0">
+                <a href="{{ url_for('index') }}" class="nav-item nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                <a href="{{ url_for('products') }}" class="nav-item nav-link {% if request.endpoint == 'products' %}active{% endif %}">Shop</a>
+                <a href="{{ url_for('coupons_page') }}" class="nav-item nav-link"><i class="fa fa-tag me-1"></i>Offers</a>
+                
+                {% if current_user.is_authenticated %}
+                    {% if current_user.can_sell() %}
+                        <a href="{{ url_for('add_product') }}" class="nav-item nav-link">Sell</a>
+                    {% endif %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-item nav-link">Dashboard</a>
+                {% endif %}
+                
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
+                    <div class="dropdown-menu m-0">
+                        <a href="{{ url_for('products') }}" class="dropdown-item">All Products</a>
+                        <a href="{{ url_for('coupons_page') }}" class="dropdown-item">Coupons & Offers</a>
+                        {% if current_user.is_authenticated and current_user.can_buy() %}
+                            <a href="{{ url_for('view_cart') }}" class="dropdown-item">My Cart</a>
+                            <a href="{{ url_for('favorites') }}" class="dropdown-item">My Favorites</a>
+                        {% endif %}
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('profile') }}" class="dropdown-item">My Profile</a>
+                            <a href="{{ url_for('notifications_page') }}" class="dropdown-item">Notifications</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+                <!-- Favorites Icon -->
+                <div class="position-relative me-2">
+                    <a href="{{ url_for('favorites') }}" class="btn text-light position-relative">
+                        <i class="fa fa-heart"></i>
+                        <span class="favorite-badge" id="favoritesBadge" style="display: {% if favorites_count() > 0 %}inline-block{% else %}none{% endif %};">
+                            {{ favorites_count() if favorites_count() > 0 else '' }}
+                        </span>
+                    </a>
+                </div>
+                <!-- Cart Icon -->
+                <div class="position-relative me-2">
+                    <a href="{{ url_for('view_cart') }}" class="btn text-light position-relative">
+                        <i class="fa fa-shopping-cart"></i>
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </a>
+                </div>
+                <!-- Notifications Icon -->
+                <div class="position-relative me-3">
+                    <a href="{{ url_for('notifications_page') }}" class="btn text-light position-relative" id="notificationBell">
+                        <i class="fa fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge">
+                            {{ unread_notifications_count() if unread_notifications_count() > 0 else '' }}
+                        </span>
+                    </a>
+                </div>
+                <!-- User Dropdown -->
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fa fa-user-circle me-1"></i>{{ current_user.full_name.split()[0] }}
+                    </a>
+                    <div class="dropdown-menu m-0">
+                        <a href="{{ url_for('profile') }}" class="dropdown-item">My Profile</a>
+                        <a href="{{ url_for('dashboard') }}" class="dropdown-item">Dashboard</a>
+                        <a href="{{ url_for('favorites') }}" class="dropdown-item">My Favorites</a>
+                        <a href="{{ url_for('notifications_page') }}" class="dropdown-item">Notifications</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('logout') }}" class="dropdown-item text-danger">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-outline-light ms-3 rounded-pill px-4">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-primary ms-2 rounded-pill px-4">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+</div>
+<!-- Navbar End -->
+
+<!-- Flash Messages -->
+<div class="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show shadow-lg" role="alert">
+                <i class="fa fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<!-- Scroll to Top Button -->
+<div class="scroll-to-top" id="scrollToTopBtn">
+    <i class="fa fa-arrow-up"></i>
+</div>
+
+{% block content %}{% endblock %}
+
+<!-- Footer Start -->
+<div class="container-fluid bg-dark text-light mt-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container">
+        <div class="row gx-5">
+            <div class="col-lg-4 col-md-6 footer-about">
+                <div class="d-flex flex-column align-items-center justify-content-center text-center h-100 bg-primary p-4">
+                    <a href="{{ url_for('index') }}" class="navbar-brand">
+                        <h1 class="m-0 text-white"><i class="fa fa-store me-2"></i>Community Market</h1>
+                    </a>
+                    <p class="mt-3 mb-4">South Africa's premier local marketplace connecting buyers and sellers with secure transactions and community trust.</p>
+                </div>
+            </div>
+            <div class="col-lg-8 col-md-6">
+                <div class="row gx-5">
+                    <div class="col-lg-4 col-md-12 pt-5 mb-5">
+                        <div class="section-title section-title-sm position-relative pb-3 mb-4">
+                            <h3 class="text-light mb-0">Get In Touch</h3>
+                        </div>
+                        <div class="d-flex mb-2">
+                            <i class="bi bi-geo-alt text-primary me-2"></i>
+                            <p class="mb-0">Johannesburg, South Africa</p>
+                        </div>
+                        <div class="d-flex mb-2">
+                            <i class="bi bi-envelope-open text-primary me-2"></i>
+                            <p class="mb-0">support@communitymarket.co.za</p>
+                        </div>
+                        <div class="d-flex mb-2">
+                            <i class="bi bi-telephone text-primary me-2"></i>
+                            <p class="mb-0">0800 123 456</p>
+                        </div>
+                        <div class="d-flex mt-4">
+                            <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-twitter fw-normal"></i></a>
+                            <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-facebook-f fw-normal"></i></a>
+                            <a class="btn btn-primary btn-square me-2" href="#"><i class="fab fa-linkedin-in fw-normal"></i></a>
+                            <a class="btn btn-primary btn-square" href="#"><i class="fab fa-instagram fw-normal"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12 pt-0 pt-lg-5 mb-5">
+                        <div class="section-title section-title-sm position-relative pb-3 mb-4">
+                            <h3 class="text-light mb-0">Quick Links</h3>
+                        </div>
+                        <div class="link-animated d-flex flex-column justify-content-start">
+                            <a class="text-light mb-2" href="{{ url_for('index') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Home</a>
+                            <a class="text-light mb-2" href="{{ url_for('products') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Shop</a>
+                            <a class="text-light mb-2" href="{{ url_for('coupons_page') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Coupons & Offers</a>
+                            {% if current_user.is_authenticated and current_user.can_sell() %}
+                                <a class="text-light mb-2" href="{{ url_for('add_product') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Sell an Item</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12 pt-0 pt-lg-5 mb-5">
+                        <div class="section-title section-title-sm position-relative pb-3 mb-4">
+                            <h3 class="text-light mb-0">Account</h3>
+                        </div>
+                        <div class="link-animated d-flex flex-column justify-content-start">
+                            {% if current_user.is_authenticated %}
+                                <a class="text-light mb-2" href="{{ url_for('profile') }}"><i class="bi bi-arrow-right text-primary me-2"></i>My Profile</a>
+                                <a class="text-light mb-2" href="{{ url_for('favorites') }}"><i class="bi bi-arrow-right text-primary me-2"></i>My Favorites</a>
+                                <a class="text-light mb-2" href="{{ url_for('notifications_page') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Notifications</a>
+                                <a class="text-light mb-2" href="{{ url_for('logout') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Logout</a>
+                            {% else %}
+                                <a class="text-light mb-2" href="{{ url_for('login') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Login</a>
+                                <a class="text-light mb-2" href="{{ url_for('register') }}"><i class="bi bi-arrow-right text-primary me-2"></i>Sign Up</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid text-white" style="background: #061429;">
+    <div class="container text-center">
+        <div class="row justify-content-end">
+            <div class="col-lg-8 col-md-6">
+                <div class="d-flex align-items-center justify-content-center" style="height: 75px;">
+                    <p class="mb-0">&copy; <a class="text-white border-bottom" href="#">Community Market</a>. All Rights Reserved. Crafted with <i class="fa fa-heart text-danger"></i> in South Africa</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Footer End -->
+
+<!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/wow/wow.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/counterup/counterup.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+    // Initialize WOW.js
+    new WOW().init();
+    
+    // ============================================
+    // CSRF TOKEN HANDLER FOR ALL AJAX REQUESTS
+    // ============================================
+    function getCsrfToken() {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        return token ? token.getAttribute('content') : '';
+    }
+    
+    // Override fetch to include CSRF token for POST, PUT, DELETE requests
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+            options.headers = options.headers || {};
+            options.headers['X-CSRFToken'] = getCsrfToken();
+        }
+        return originalFetch.call(this, url, options);
+    };
+    
+    // Also ensure XMLHttpRequest includes CSRF token
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+        this._method = method;
+        this._url = url;
+        return originalOpen.call(this, method, url, async !== false, user, password);
+    };
+    
+    const originalSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function(data) {
+        if (this._method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(this._method.toUpperCase())) {
+            this.setRequestHeader('X-CSRFToken', getCsrfToken());
+        }
+        return originalSend.call(this, data);
+    };
+    
+    // Navbar scroll effect
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        const navbarContainer = document.querySelector('.container-fluid.position-relative.p-0');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+            if (navbarContainer) navbarContainer.style.background = '#0f2a2e';
+        } else {
+            navbar.classList.remove('scrolled');
+            if (navbarContainer) navbarContainer.style.background = '#1e3a3f';
+        }
+    });
+    
+    // Auto-dismiss flash messages after 10 seconds (10000 milliseconds)
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            new bootstrap.Alert(alert).close();
+        });
+    }, 10000);
+    
+    // Scroll to top button
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
+        }
+    });
+    scrollToTopBtn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    // Update cart count
+    function updateCartCount() {
+        fetch('/api/cart-count', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('cartCount');
+            if (badge) badge.textContent = data.count || 0;
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    // Update favorites count
+    function updateFavoritesCount() {
+        fetch('/api/favorites/count', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('favoritesBadge');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('cartCount')) updateCartCount();
+        if (document.getElementById('favoritesBadge')) updateFavoritesCount();
+    });
+    
+    // Prevent double submissions
+    document.querySelectorAll('form').forEach(form => {
+        let submitted = false;
+        form.addEventListener('submit', function(e) {
+            if (submitted) {
+                e.preventDefault();
+                return false;
+            }
+            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn) {
+                submitted = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.classList.add('btn-loading');
+                setTimeout(() => {
+                    if (submitBtn.disabled) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('btn-loading');
+                        submitBtn.innerHTML = originalText;
+                        submitted = false;
+                    }
+                }, 30000);
+            }
+        });
+    });
+    
+    // Show toast notification function
+    window.showToast = function(message, type = 'info') {
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0 position-fixed bottom-0 end-0 m-3" role="alert" style="z-index: 10000;">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        const container = document.createElement('div');
+        container.innerHTML = toastHtml;
+        document.body.appendChild(container);
+        const toastEl = container.querySelector('.toast');
+        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 3000 });
+        toast.show();
+        setTimeout(() => { container.remove(); }, 3100);
+    };
+    
+    // Notification system
+    {% if current_user.is_authenticated %}
+    function updateNavbarUnreadCount(count) {
+        const badge = document.getElementById('notificationBadge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        const bellIcon = document.getElementById('notificationBell');
+        if (bellIcon && count > 0) {
+            bellIcon.classList.add('fa-shake');
+        } else if (bellIcon) {
+            bellIcon.classList.remove('fa-shake');
+        }
+    }
+    
+    function checkUnreadNotifications() {
+        fetch('/api/notifications/unread-count', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) updateNavbarUnreadCount(data.count);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    if (document.getElementById('notificationBadge')) {
+        checkUnreadNotifications();
+        setInterval(checkUnreadNotifications, 30000);
+    }
+    {% endif %}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

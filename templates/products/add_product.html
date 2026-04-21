@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Add Product - Community Market{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="bg-light rounded p-5">
+                    <div class="section-title text-center position-relative pb-3 mb-4 mx-auto" style="max-width: 500px;">
+                        <h5 class="fw-bold text-primary text-uppercase">List Your Product</h5>
+                        <h1 class="mb-0">Add New Product</h1>
+                    </div>
+                    
+                    <form method="POST" action="" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label fw-semibold") }}
+                            {{ form.name(class="form-control form-control-lg", placeholder="Enter product name") }}
+                            {% for error in form.name.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-semibold") }}
+                            {{ form.description(class="form-control form-control-lg", rows="5", placeholder="Describe your product in detail...") }}
+                            {% for error in form.description.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.price.label(class="form-label fw-semibold") }}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white border-0">R</span>
+                                    {{ form.price(class="form-control form-control-lg", placeholder="0.00") }}
+                                </div>
+                                {% for error in form.price.errors %}
+                                    <span class="text-danger small">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.stock_quantity.label(class="form-label fw-semibold") }}
+                                {{ form.stock_quantity(class="form-control form-control-lg", placeholder="Quantity available") }}
+                                {% for error in form.stock_quantity.errors %}
+                                    <span class="text-danger small">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.category.label(class="form-label fw-semibold") }}
+                                {{ form.category(class="form-select form-select-lg") }}
+                                {% for error in form.category.errors %}
+                                    <span class="text-danger small">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Product Image</label>
+                                <input type="file" name="product_image" class="form-control form-control-lg" accept="image/*" id="productImage">
+                                <small class="text-muted">Upload a product image (max 5MB, JPG/PNG)</small>
+                                <img id="imagePreview" class="img-fluid mt-2 rounded" style="display: none; max-height: 150px;">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info d-flex align-items-center gap-3 mt-3">
+                            <i class="fa fa-info-circle fa-2x text-primary"></i>
+                            <div>
+                                <strong class="d-block">Admin Approval Required</strong>
+                                <small>Your product will be reviewed by admin before being visible to buyers. This usually takes 24-48 hours.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-3 mt-4">
+                            {{ form.submit(class="btn btn-primary btn-lg py-3") }}
+                            <a href="{{ url_for('seller_dashboard') }}" class="btn btn-outline-secondary btn-lg py-3">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('productImage')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image too large. Maximum 5MB.');
+                this.value = '';
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+        }
+    });
+</script>
+{% endblock %}

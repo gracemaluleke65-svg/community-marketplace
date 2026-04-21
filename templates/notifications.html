@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h1 class="display-5 mb-0">
+                        <i class="fa fa-bell me-2 text-primary"></i> Notifications
+                    </h1>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" id="markAllReadBtn">
+                            <i class="fa fa-check-double me-2"></i> Mark All Read
+                        </button>
+                        <button class="btn btn-outline-danger" id="clearAllBtn">
+                            <i class="fa fa-trash-alt me-2"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-light rounded">
+                    <div id="notificationsList">
+                        <div class="text-center py-5" id="loadingSpinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4" id="loadMoreContainer" style="display: none;">
+                    <button class="btn btn-outline-primary rounded-pill px-4" id="loadMoreBtn">
+                        <i class="fa fa-chevron-down me-2"></i> Load More
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .notification-item {
+        border-bottom: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .notification-item.unread {
+        background: linear-gradient(90deg, rgba(30, 123, 110, 0.05), transparent);
+        border-left: 3px solid var(--primary);
+    }
+    
+    .notification-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .notification-icon.info { background: rgba(13, 110, 253, 0.1); color: #0d6efd; }
+    .notification-icon.success { background: rgba(25, 135, 84, 0.1); color: #198754; }
+    .notification-icon.warning { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+    .notification-icon.danger { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+    .notification-icon.order { background: rgba(30, 123, 110, 0.1); color: var(--primary); }
+    .notification-icon.product { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
+    .notification-icon.system { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
+    
+    .notification-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+    }
+    
+    .notification-message {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .notification-time {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+    
+    .notification-item.unread .notification-title {
+        color: var(--primary);
+    }
+    
+    .mark-read-btn {
+        font-size: 0.8rem;
+        color: var(--primary);
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+    }
+    
+    .mark-read-btn:hover {
+        background-color: rgba(30, 123, 110, 0.1);
+        color: #0f5a50;
+    }
+    
+    @media (max-width: 768px) {
+        .notification-item { padding: 1rem !important; }
+        .notification-icon { width: 35px; height: 35px; font-size: 1rem; }
+        .notification-title { font-size: 0.9rem; }
+        .notification-message { font-size: 0.8rem; }
+    }
+</style>
+
+<script>
+    let currentOffset = 0;
+    const limit = 20;
+    let isLoading = false;
+    let hasMore = true;
+    
+    function getNotificationIcon(type) {
+        const icons = {
+            'info': 'fa-info-circle',
+            'success': 'fa-check-circle',
+            'warning': 'fa-exclamation-triangle',
+            'danger': 'fa-times-circle',
+            'order': 'fa-shopping-cart',
+            'product': 'fa-box',
+            'system': 'fa-cog'
+        };
+        return icons[type] || 'fa-bell';
+    }
+    
+    function loadNotifications() {
+        if (isLoading || !hasMore) return;
+        
+        isLoading = true;
+        
+        fetch(`/api/notifications?offset=${currentOffset}&limit=${limit}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (currentOffset === 0) {
+                        document.getElementById('notificationsList').innerHTML = '';
+                    }
+                    
+                    if (data.notifications.length === 0 && currentOffset === 0) {
+                        document.getElementById('notificationsList').innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="fa fa-bell-slash fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">No notifications yet</h5>
+                                <p class="text-muted small">We'll notify you when something important happens</p>
+                            </div>
+                        `;
+                        hasMore = false;
+                        document.getElementById('loadMoreContainer').style.display = 'none';
+                    } else {
+                        data.notifications.forEach(notification => {
+                            addNotificationToDOM(notification);
+                        });
+                        
+                        hasMore = data.has_more;
+                        currentOffset += data.notifications.length;
+                        
+                        if (hasMore) {
+                            document.getElementById('loadMoreContainer').style.display = 'block';
+                        } else {
+                            document.getElementById('loadMoreContainer').style.display = 'none';
+                        }
+                    }
+                    
+                    if (data.total_unread !== undefined) {
+                        updateNavbarUnreadCount(data.total_unread);
+                    }
+                }
+                
+                document.getElementById('loadingSpinner').style.display = 'none';
+                isLoading = false;
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                document.getElementById('loadingSpinner').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fa fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <p class="text-danger">Failed to load notifications. Please try again.</p>
+                        <button class="btn btn-primary mt-2" onclick="location.reload()">Refresh</button>
+                    </div>
+                `;
+                isLoading = false;
+            });
+    }
+    
+    function addNotificationToDOM(notification) {
+        const container = document.getElementById('notificationsList');
+        const iconClass = getNotificationIcon(notification.type);
+        const isUnread = !notification.is_read;
+        
+        const notificationHtml = `
+            <div class="notification-item p-4 ${isUnread ? 'unread' : ''}" data-id="${notification.id}" data-link="${notification.link_url || ''}">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="notification-icon ${notification.type}">
+                            <i class="fa ${iconClass}"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div class="flex-grow-1">
+                                <div class="notification-title">${escapeHtml(notification.title)}</div>
+                                <div class="notification-message">${escapeHtml(notification.message)}</div>
+                                <div class="notification-time mt-1">
+                                    <i class="fa fa-clock me-1"></i> ${notification.time_ago || 'Just now'}
+                                </div>
+                            </div>
+                            ${isUnread ? `
+                                <button class="mark-read-btn btn-sm" data-id="${notification.id}">
+                                    <i class="fa fa-check-circle me-1"></i> Mark read
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', notificationHtml);
+        
+        const element = container.lastElementChild;
+        const markReadBtn = element.querySelector('.mark-read-btn');
+        
+        if (markReadBtn) {
+            markReadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                markNotificationRead(notification.id, element);
+            });
+        }
+        
+        if (notification.link_url) {
+            element.addEventListener('click', (e) => {
+                if (!e.target.closest('.mark-read-btn')) {
+                    if (isUnread) {
+                        markNotificationRead(notification.id, element, true);
+                    } else {
+                        window.location.href = notification.link_url;
+                    }
+                }
+            });
+        }
+    }
+    
+    function markNotificationRead(notificationId, element, redirect = false) {
+        fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ notification_id: notificationId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (element) {
+                    element.classList.remove('unread');
+                    const markReadBtn = element.querySelector('.mark-read-btn');
+                    if (markReadBtn) markReadBtn.remove();
+                }
+                
+                updateNavbarUnreadCount(data.total_unread);
+                
+                if (redirect) {
+                    const link = element.getAttribute('data-link');
+                    if (link) window.location.href = link;
+                }
+            }
+        })
+        .catch(error => console.error('Error marking read:', error));
+    }
+    
+    function markAllRead() {
+        const markAllBtn = document.getElementById('markAllReadBtn');
+        const originalText = markAllBtn.innerHTML;
+        markAllBtn.disabled = true;
+        markAllBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i> Processing...';
+        
+        fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.classList.remove('unread');
+                    const markReadBtn = item.querySelector('.mark-read-btn');
+                    if (markReadBtn) markReadBtn.remove();
+                });
+                updateNavbarUnreadCount(0);
+                showToast('All notifications marked as read', 'success');
+            }
+            markAllBtn.disabled = false;
+            markAllBtn.innerHTML = originalText;
+        })
+        .catch(error => {
+            console.error('Error marking all read:', error);
+            showToast('Failed to mark all as read', 'error');
+            markAllBtn.disabled = false;
+            markAllBtn.innerHTML = originalText;
+        });
+    }
+    
+    function clearAllNotifications() {
+        if (confirm('⚠️ Are you sure you want to clear ALL notifications? This action cannot be undone.')) {
+            const clearBtn = document.getElementById('clearAllBtn');
+            const originalText = clearBtn.innerHTML;
+            clearBtn.disabled = true;
+            clearBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i> Clearing...';
+            
+            fetch('/api/notifications/clear-all', {
+                method: 'DELETE',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('notificationsList').innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">All notifications cleared</h5>
+                            <p class="text-muted small">Your notification history is now empty</p>
+                        </div>
+                    `;
+                    document.getElementById('loadMoreContainer').style.display = 'none';
+                    updateNavbarUnreadCount(0);
+                    currentOffset = 0;
+                    hasMore = false;
+                    showToast('All notifications cleared', 'success');
+                }
+                clearBtn.disabled = false;
+                clearBtn.innerHTML = originalText;
+            })
+            .catch(error => {
+                console.error('Error clearing notifications:', error);
+                showToast('Failed to clear notifications', 'error');
+                clearBtn.disabled = false;
+                clearBtn.innerHTML = originalText;
+            });
+        }
+    }
+    
+    function showToast(message, type) {
+        const toastHtml = `
+            <div class="alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', toastHtml);
+        setTimeout(() => {
+            const toast = document.querySelector('.alert:last-child');
+            if (toast) toast.remove();
+        }, 3000);
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadNotifications();
+        
+        const markAllBtn = document.getElementById('markAllReadBtn');
+        if (markAllBtn) markAllBtn.addEventListener('click', markAllRead);
+        
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        if (clearAllBtn) clearAllBtn.addEventListener('click', clearAllNotifications);
+        
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) loadMoreBtn.addEventListener('click', loadNotifications);
+    });
+</script>
+{% endblock %}

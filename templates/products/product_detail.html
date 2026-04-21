@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Community Market{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('products') }}">Products</a></li>
+                <li class="breadcrumb-item active text-primary">{{ product.name[:30] }}</li>
+            </ol>
+        </nav>
+        
+        <div class="row g-5">
+            <!-- Product Image -->
+            <div class="col-lg-6 wow slideInLeft" data-wow-delay="0.3s">
+                <div class="bg-light rounded p-4 text-center">
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" class="img-fluid rounded" alt="{{ product.name }}" style="max-height: 500px; width: 100%; object-fit: contain;">
+                    {% else %}
+                        <div class="py-5">
+                            <i class="fa fa-image fa-5x text-muted"></i>
+                            <p class="mt-3 text-muted">No image available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Product Info -->
+            <div class="col-lg-6 wow slideInRight" data-wow-delay="0.5s">
+                <div class="bg-light rounded p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary px-3 py-2 rounded-pill">{{ product.category|capitalize }}</span>
+                        {% if current_user.is_authenticated and current_user.can_buy() %}
+                        <button class="favorite-btn" data-product-id="{{ product.id }}" data-favorited="{{ 'true' if is_favorited else 'false' }}">
+                            <i class="fa fa-heart"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <h2 class="mb-3">{{ product.name }}</h2>
+                    
+                    <!-- Rating -->
+                    <div class="mb-3">
+                        <div class="rating">
+                            {% for i in range(5) %}
+                                {% if i < avg_rating|int %}
+                                    <i class="fa fa-star text-warning"></i>
+                                {% elif i < avg_rating %}
+                                    <i class="fa fa-star-half-alt text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-muted ms-2">
+                                {{ "%.1f"|format(avg_rating) }} out of 5 ({{ reviews|length }} reviews)
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-primary mb-3">R{{ "%.2f"|format(product.price) }}</h3>
+                    
+                    <div class="mb-3 p-3 bg-white rounded">
+                        <strong><i class="fa fa-box me-2 text-primary"></i>Stock Status:</strong>
+                        {% if product.stock_quantity > 0 %}
+                            <span class="text-success ms-2"><i class="fa fa-check-circle"></i> In Stock ({{ product.stock_quantity }} available)</span>
+                        {% else %}
+                            <span class="text-danger ms-2"><i class="fa fa-times-circle"></i> Out of Stock</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 p-3 bg-white rounded">
+                        <strong><i class="fa fa-store me-2 text-primary"></i>Seller:</strong>
+                        <span class="ms-2">{{ product.seller.full_name }}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <strong><i class="fa fa-align-left me-2 text-primary"></i>Description:</strong>
+                        <p class="mt-2 text-muted">{{ product.description }}</p>
+                    </div>
+                    
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.can_buy() %}
+                            {% if product.stock_quantity > 0 %}
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="btn btn-primary btn-lg rounded-pill">
+                                        <i class="fa fa-cart-plus me-2"></i> Add to Cart
+                                    </a>
+                                </div>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg rounded-pill" disabled>
+                                    <i class="fa fa-times me-2"></i> Out of Stock
+                                </button>
+                            {% endif %}
+                        {% elif current_user.id == product.seller_id or current_user.role == 'admin' %}
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-warning btn-lg rounded-pill">
+                                    <i class="fa fa-edit me-2"></i> Edit Product
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info d-flex align-items-center gap-3 rounded-pill">
+                            <i class="fa fa-info-circle fa-2x text-primary"></i>
+                            <div>
+                                <a href="{{ url_for('login') }}" class="fw-bold text-primary">Login</a> to purchase this product
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reviews Section -->
+        <div class="row mt-5 wow fadeInUp" data-wow-delay="0.7s">
+            <div class="col-12">
+                <div class="bg-light rounded p-4">
+                    <h5 class="mb-4"><i class="fa fa-comments me-2 text-primary"></i> Customer Reviews ({{ reviews|length }})</h5>
+                    
+                    <!-- Review Form -->
+                    {% if current_user.is_authenticated and current_user.can_buy() %}
+                        <div class="mb-4 p-4 bg-white rounded">
+                            <h6 class="mb-3">Write a Review</h6>
+                            <form method="POST" action="{{ url_for('add_review', product_id=product.id) }}">
+                                {{ form.hidden_tag() }}
+                                <div class="row align-items-end">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Rating:</label>
+                                        {{ form.rating(class="form-select") }}
+                                    </div>
+                                    <div class="col-md-7 mb-2">
+                                        <label class="form-label">Your Review:</label>
+                                        {{ form.comment(class="form-control", rows="2", placeholder="Share your experience...") }}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        {{ form.submit(class="btn btn-primary w-100 rounded-pill", value="Submit") }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Reviews List -->
+                    {% if reviews %}
+                        {% for review in reviews %}
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                    <div>
+                                        <strong><i class="fa fa-user-circle me-2 text-primary"></i>{{ review.user.full_name }}</strong>
+                                        <div class="rating mt-1">
+                                            {% for i in range(5) %}
+                                                {% if i < review.rating %}
+                                                    <i class="fa fa-star text-warning" style="font-size: 12px;"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning" style="font-size: 12px;"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted"><i class="far fa-calendar-alt me-1"></i>{{ review.created_at.strftime('%B %d, %Y') }}</small>
+                                </div>
+                                <p class="mt-2 text-muted">{{ review.comment }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fa fa-comment-slash fa-4x text-muted mb-3"></i>
+                            <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        font-size: 18px;
+        color: #1e7b6e;
+    }
+    
+    .breadcrumb-item a {
+        text-decoration: none;
+        color: #6c757d;
+        transition: color 0.3s ease;
+    }
+    
+    .breadcrumb-item a:hover {
+        color: #1e7b6e;
+    }
+    
+    .favorite-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .favorite-btn i {
+        font-size: 1.3rem;
+        color: #dc3545;
+        transition: all 0.3s ease;
+    }
+    
+    .favorite-btn:hover {
+        transform: scale(1.1);
+        background: #dc3545;
+    }
+    
+    .favorite-btn:hover i {
+        color: white;
+    }
+    
+    .favorite-btn[data-favorited="true"] {
+        background: #dc3545;
+    }
+    
+    .favorite-btn[data-favorited="true"] i {
+        color: white;
+    }
+    
+    .favorite-btn[data-favorited="true"]:hover {
+        background: white;
+    }
+    
+    .favorite-btn[data-favorited="true"]:hover i {
+        color: #dc3545;
+    }
+    
+    .rating {
+        color: #ffc107;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffd166, #ffc107);
+        border: none;
+        color: #1e3a3f;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    
+    .alert-info {
+        background: rgba(30, 123, 110, 0.1);
+        border: 1px solid rgba(30, 123, 110, 0.2);
+        border-radius: 60px;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #1e7b6e;
+        box-shadow: 0 0 0 3px rgba(30, 123, 110, 0.1);
+        outline: none;
+    }
+    
+    @media (max-width: 768px) {
+        .favorite-btn {
+            width: 35px;
+            height: 35px;
+        }
+        .favorite-btn i {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Favorite button functionality
+    const favoriteBtn = document.querySelector('.favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            const isFavorited = this.getAttribute('data-favorited') === 'true';
+            
+            fetch(`/api/favorite/toggle/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.action === 'added') {
+                        this.setAttribute('data-favorited', 'true');
+                        showToast('Added to favorites!', 'success');
+                    } else {
+                        this.setAttribute('data-favorited', 'false');
+                        showToast('Removed from favorites', 'info');
+                    }
+                    
+                    // Update favorites count
+                    fetch('/api/favorites/count')
+                        .then(res => res.json())
+                        .then(countData => {
+                            const badge = document.getElementById('favoritesBadge');
+                            if (badge) {
+                                if (countData.count > 0) {
+                                    badge.textContent = countData.count > 99 ? '99+' : countData.count;
+                                    badge.style.display = 'inline-block';
+                                } else {
+                                    badge.style.display = 'none';
+                                }
+                            }
+                        });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    }
+    
+    function showToast(message, type) {
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed bottom-0 end-0 m-3" role="alert" style="z-index: 10000;">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        const container = document.createElement('div');
+        container.innerHTML = toastHtml;
+        document.body.appendChild(container);
+        const toastEl = container.querySelector('.toast');
+        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 3000 });
+        toast.show();
+        setTimeout(() => { container.remove(); }, 3100);
+    }
+});
+</script>
+{% endblock %}

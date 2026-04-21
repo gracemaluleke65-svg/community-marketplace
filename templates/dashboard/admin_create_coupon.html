@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Create Coupon - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 10px 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #1e7b6e;
+        box-shadow: 0 0 0 3px rgba(30, 123, 110, 0.1);
+        outline: none;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #1e3a3f;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        border-radius: 40px;
+        padding: 12px 28px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        border: none;
+        border-radius: 40px;
+        padding: 12px 28px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+    }
+    
+    .form-check-input:checked {
+        background-color: #1e7b6e;
+        border-color: #1e7b6e;
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
+    }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+    .delay-6 { animation-delay: 0.6s; }
+    .delay-7 { animation-delay: 0.7s; }
+    .delay-8 { animation-delay: 0.8s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 animate-slide-up">
+                <div class="text-center mb-4">
+                    <i class="fas fa-tag fa-3x mb-3" style="color: #1e7b6e;"></i>
+                    <h2 class="mb-2">Create New Coupon</h2>
+                    <p class="text-muted">Create discounts and promotions for your customers</p>
+                </div>
+                
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3 animate-slide-up delay-1">
+                            {{ form.code.label(class="form-label") }}
+                            {{ form.code(class="form-control", placeholder="e.g., SUMMER20") }}
+                            <small class="text-muted">Use uppercase letters and numbers only</small>
+                            {% for error in form.code.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3 animate-slide-up delay-2">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control", placeholder="e.g., Summer Sale 20% Off") }}
+                            {% for error in form.name.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 animate-slide-up delay-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="3", placeholder="Describe this coupon offer...") }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3 animate-slide-up delay-4">
+                            {{ form.discount_type.label(class="form-label") }}
+                            {{ form.discount_type(class="form-select") }}
+                            {% for error in form.discount_type.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3 animate-slide-up delay-5">
+                            {{ form.discount_value.label(class="form-label") }}
+                            {{ form.discount_value(class="form-control", placeholder="10 for 10% or 50 for R50", step="0.01") }}
+                            {% for error in form.discount_value.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3 animate-slide-up delay-6">
+                            {{ form.min_order_amount.label(class="form-label") }}
+                            {{ form.min_order_amount(class="form-control", placeholder="0 for no minimum", step="0.01") }}
+                            <small class="text-muted">Minimum cart value required</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3 animate-slide-up delay-7">
+                            {{ form.max_discount_amount.label(class="form-label") }}
+                            {{ form.max_discount_amount(class="form-control", placeholder="Leave blank for no limit", step="0.01") }}
+                            <small class="text-muted">Maximum discount amount (for percentage coupons)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3 animate-slide-up delay-8">
+                            {{ form.applicable_category.label(class="form-label") }}
+                            {{ form.applicable_category(class="form-select") }}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.applicable_seller_id.label(class="form-label") }}
+                            {{ form.applicable_seller_id(class="form-control", placeholder="Leave blank for all sellers") }}
+                            <small class="text-muted">Specific seller ID (optional)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.valid_from.label(class="form-label") }}
+                            {{ form.valid_from(class="form-control", type="datetime-local") }}
+                            {% for error in form.valid_from.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.valid_to.label(class="form-label") }}
+                            {{ form.valid_to(class="form-control", type="datetime-local") }}
+                            {% for error in form.valid_to.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.usage_limit.label(class="form-label") }}
+                            {{ form.usage_limit(class="form-control", placeholder="Leave blank for unlimited") }}
+                            <small class="text-muted">Total times this coupon can be used</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.per_user_limit.label(class="form-label") }}
+                            {{ form.per_user_limit(class="form-control") }}
+                            <small class="text-muted">Times each user can use this coupon</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.is_first_purchase_only(class="form-check-input") }}
+                                {{ form.is_first_purchase_only.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-3 mt-4">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('admin_coupons') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-generate coupon code from name
+document.getElementById('name')?.addEventListener('input', function() {
+    const codeField = document.getElementById('code');
+    if (!codeField.value) {
+        let code = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        code = code.slice(0, 20);
+        codeField.value = code;
+    }
+});
+
+// Set default dates
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    const validFromField = document.getElementById('valid_from');
+    const validToField = document.getElementById('valid_to');
+    
+    if (validFromField && !validFromField.value) {
+        validFromField.value = now.toISOString().slice(0, 16);
+    }
+    
+    if (validToField && !validToField.value) {
+        validToField.value = oneWeekLater.toISOString().slice(0, 16);
+    }
+});
+</script>
+{% endblock %}

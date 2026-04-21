@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Buyer Dashboard - Community Market{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="mb-0">
+                <i class="fa fa-shopping-cart me-2 text-primary"></i> Buyer Dashboard
+            </h2>
+            {% if current_user.role == 'both' %}
+                <a href="{{ url_for('switch_mode', mode='seller') }}" class="btn btn-secondary rounded-pill">
+                    <i class="fa fa-store me-2"></i> Switch to Seller Mode
+                </a>
+            {% endif %}
+        </div>
+        
+        {% if current_user.role == 'both' %}
+            <div class="alert alert-info d-flex align-items-center gap-3 mb-4 rounded-4">
+                <i class="fa fa-info-circle fa-2x text-primary"></i>
+                <div>
+                    You're in <strong>BUYER MODE</strong>. You can shop and purchase products.
+                    <a href="{{ url_for('switch_mode', mode='seller') }}" class="text-primary fw-bold">Switch to Seller Mode</a> to list and manage your products.
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 wow fadeInUp" data-wow-delay="0.2s">
+                <div class="bg-light rounded p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Items in Cart</h6>
+                            <h2 class="mb-0 fw-bold text-primary">{{ cart_items|length }}</h2>
+                        </div>
+                        <i class="fa fa-shopping-cart fa-3x text-primary opacity-25"></i>
+                    </div>
+                    <a href="{{ url_for('view_cart') }}" class="btn btn-primary btn-sm mt-3 rounded-pill">
+                        <i class="fa fa-eye me-2"></i> View Cart
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6 wow fadeInUp" data-wow-delay="0.3s">
+                <div class="bg-light rounded p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Orders</h6>
+                            <h2 class="mb-0 fw-bold text-primary">{{ orders|length }}</h2>
+                        </div>
+                        <i class="fa fa-box fa-3x text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Upgrade Banner for Buyers -->
+        {% if current_user.role == 'buyer' %}
+            <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 rounded-4">
+                <i class="fa fa-store fa-2x text-warning"></i>
+                <div>
+                    <strong>Want to start selling?</strong> Upgrade to a seller account and reach more customers!
+                    <form method="POST" action="{{ url_for('upgrade_to_seller') }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-warning ms-2" onclick="return confirm('Upgrade to seller? You will be able to list products for sale!')">
+                            <i class="fa fa-rocket me-1"></i> Become a Seller
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Orders Table -->
+        <div class="bg-light rounded p-4 wow fadeInUp" data-wow-delay="0.4s">
+            <h5 class="mb-3"><i class="fa fa-history me-2 text-primary"></i> My Orders</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(30,123,110,0.2);">
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                         </td>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td><span class="small">{{ order.order_number[:20] }}...</span></td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="fw-bold text-primary">R{{ "%.2f"|format(order.final_amount) }}</td>
+                            <td><span class="status-badge status-{{ order.status }}">{{ order.status|upper }}</span></td>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-primary btn-sm rounded-pill">
+                                    <i class="fa fa-receipt me-1"></i> Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if orders|length == 0 %}
+            <div class="text-center py-4">
+                <i class="fa fa-shopping-cart fa-3x mb-2 text-muted"></i>
+                <p class="text-muted">You haven't placed any orders yet.</p>
+                <a href="{{ url_for('products') }}" class="btn btn-primary rounded-pill">Start Shopping</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-paid { background: #d1ecf1; color: #0c5460; }
+    .status-shipped { background: #d4edda; color: #155724; }
+    .status-delivered { background: linear-gradient(135deg, #1e7b6e, #2c9c8a); color: white; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        border: none;
+    }
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+    }
+    .table tbody tr:hover {
+        background: rgba(30, 123, 110, 0.05);
+    }
+    .alert-info {
+        background: rgba(30, 123, 110, 0.1);
+        border: 1px solid rgba(30, 123, 110, 0.2);
+    }
+    .alert-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.2);
+    }
+</style>
+{% endblock %}

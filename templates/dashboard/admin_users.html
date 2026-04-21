@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h2 class="mb-0">
+                <i class="fa fa-users me-2 text-primary"></i> Manage Users
+            </h2>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill">
+                <i class="fa fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+        
+        <div class="bg-light rounded p-4">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(30,123,110,0.2);">
+                            <th>ID</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                         </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td><strong>{{ user.full_name }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.phone_number }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge bg-danger rounded-pill px-3 py-2">ADMIN</span>
+                                {% elif user.role == 'seller' %}
+                                    <span class="badge bg-success rounded-pill px-3 py-2">SELLER</span>
+                                {% elif user.role == 'buyer' %}
+                                    <span class="badge bg-info rounded-pill px-3 py-2">BUYER</span>
+                                {% else %}
+                                    <span class="badge bg-primary rounded-pill px-3 py-2">BOTH</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success rounded-pill"><i class="fa fa-circle me-1" style="font-size: 8px;"></i> Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill"><i class="fa fa-circle me-1" style="font-size: 8px;"></i> Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                    <a href="{{ url_for('admin_toggle_user', user_id=user.id) }}" 
+                                       class="btn btn-sm btn-warning rounded-pill"
+                                       onclick="return confirm('Toggle user status?')">
+                                        <i class="fa fa-toggle-{{ 'on' if user.is_active else 'off' }}"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill">You</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table tbody tr:hover {
+        background: rgba(30, 123, 110, 0.05);
+        transition: all 0.3s ease;
+    }
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        border: none;
+        padding: 5px 12px;
+    }
+    .btn-warning:hover {
+        transform: scale(1.05);
+    }
+    @media (max-width: 768px) {
+        .table th, .table td {
+            padding: 10px;
+            font-size: 12px;
+        }
+        .badge {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+    }
+</style>
+{% endblock %}

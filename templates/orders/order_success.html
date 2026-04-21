@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation - Community Market{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="bg-light rounded p-5 text-center">
+                    <!-- Success Checkmark -->
+                    <div class="mb-4 wow zoomIn" data-wow-delay="0.2s">
+                        <div class="success-checkmark mx-auto">
+                            <i class="fa fa-check-circle fa-5x text-success"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Celebration Emojis -->
+                    <div class="mb-3 wow fadeIn" data-wow-delay="0.3s">
+                        <span class="celebration-emoji">🎉</span>
+                        <span class="celebration-emoji">🎊</span>
+                        <span class="celebration-emoji">✨</span>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    <h1 class="display-5 fw-bold mb-3 text-primary wow fadeInUp" data-wow-delay="0.4s">
+                        Thank You for Your Order!
+                    </h1>
+                    <p class="lead mb-4 wow fadeInUp" data-wow-delay="0.5s">
+                        Your order has been placed successfully.
+                    </p>
+                    
+                    <!-- Order Details Card -->
+                    <div class="bg-white rounded p-4 my-4 wow zoomIn" data-wow-delay="0.6s" style="max-width: 400px; margin-left: auto; margin-right: auto;">
+                        <div class="mb-2">
+                            <strong class="text-primary">Order Number:</strong><br>
+                            <span class="fw-bold fs-5">{{ order.order_number }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong class="text-primary">Total Amount:</strong><br>
+                            <span class="fs-3 fw-bold text-primary">R{{ "%.2f"|format(order.total_amount) }}</span>
+                        </div>
+                        <div>
+                            <strong class="text-primary">Status:</strong><br>
+                            <span class="badge bg-success rounded-pill px-4 py-2 fs-6 mt-1">✓ PAID</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Info Text -->
+                    <p class="text-muted mb-4 wow fadeInUp" data-wow-delay="0.7s">
+                        <i class="fa fa-envelope me-2"></i> You will receive an email confirmation shortly with your order details.
+                    </p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-3 justify-content-center flex-wrap wow fadeInUp" data-wow-delay="0.8s">
+                        <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-primary rounded-pill px-4 py-2">
+                            <i class="fa fa-receipt me-2"></i> View Order Details
+                        </a>
+                        <a href="{{ url_for('products') }}" class="btn btn-secondary rounded-pill px-4 py-2">
+                            <i class="fa fa-shopping-bag me-2"></i> Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .success-checkmark {
+        animation: bounce 0.5s ease-in-out;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+    
+    .celebration-emoji {
+        display: inline-block;
+        font-size: 2.5rem;
+        margin: 0 10px;
+        animation: wave 0.5s ease-in-out infinite;
+    }
+    
+    .celebration-emoji:nth-child(1) { animation-delay: 0s; }
+    .celebration-emoji:nth-child(2) { animation-delay: 0.15s; }
+    .celebration-emoji:nth-child(3) { animation-delay: 0.3s; }
+    
+    @keyframes wave {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(15deg); }
+        75% { transform: rotate(-15deg); }
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #ffd166, #ffc107);
+        border: none;
+        color: #1e3a3f;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        color: #1e3a3f;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1e7b6e, #0f5a50);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(30, 123, 110, 0.3);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fire confetti celebration
+        canvasConfetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#1e7b6e', '#2c9c8a', '#ffd166', '#ffc107', '#28a745']
+        });
+        
+        setTimeout(() => {
+            canvasConfetti({
+                particleCount: 100,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0, y: 0.5 },
+                colors: ['#1e7b6e', '#ffd166', '#28a745']
+            });
+            canvasConfetti({
+                particleCount: 100,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1, y: 0.5 },
+                colors: ['#2c9c8a', '#ffc107', '#20c997']
+            });
+        }, 200);
+        
+        // Continuous smaller bursts
+        let duration = 10 * 1000;
+        let animationEnd = Date.now() + duration;
+        
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        let interval = setInterval(function() {
+            let timeLeft = animationEnd - Date.now();
+            
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+            
+            let particleCount = 30 * (timeLeft / duration);
+            canvasConfetti({
+                particleCount: particleCount,
+                startVelocity: 30,
+                spread: 360,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                colors: ['#1e7b6e', '#2c9c8a', '#ffd166', '#ffc107']
+            });
+            canvasConfetti({
+                particleCount: particleCount,
+                startVelocity: 30,
+                spread: 360,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                colors: ['#1e7b6e', '#2c9c8a', '#ffd166', '#ffc107']
+            });
+        }, 300);
+    });
+</script>
+{% endblock %}
